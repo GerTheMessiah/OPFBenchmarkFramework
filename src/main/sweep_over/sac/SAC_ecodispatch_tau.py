@@ -46,7 +46,7 @@ if __name__ == '__main__':
     config = config.framework(framework="torch")
 
     config = config.environment(env=env_name,
-                                env_config={"eval": False, "reward_scaling": 1 / 50, "add_act_obs": False},
+                                env_config={"eval": False, "reward_scaling": 1 / 40000, "add_act_obs": False},
                                 disable_env_checking=True,
                                 normalize_actions=True,
                                 clip_actions=True)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     config = config.evaluation(evaluation_interval=None,
                                evaluation_duration=6720,
-                               evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
+                               evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 

@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     config = config.evaluation(evaluation_interval=None,
                                evaluation_duration=6720,
-                               evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
+                               evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 

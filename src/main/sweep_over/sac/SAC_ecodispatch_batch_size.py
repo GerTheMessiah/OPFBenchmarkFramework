@@ -16,7 +16,7 @@ from src.metric.metric import OPFMetrics
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=True, dashboard_host="0.0.0.0")
+    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
     env_name = "EcoDispatchEnv-v0"
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
     config = config.evaluation(evaluation_interval=None,
                                evaluation_duration=6720,

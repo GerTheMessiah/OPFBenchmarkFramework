@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
     config = config.evaluation(evaluation_interval=None,
                                evaluation_duration=6720,

@@ -24,10 +24,10 @@ if __name__ == '__main__':
 
     config = SACConfig()
     config = config.training(twin_q=True,
-                             q_model_config={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
-                             policy_model_config={"fcnet_hiddens": tune.grid_search([[256, 256,], [512, 512], [256, 256, 256], [256, 512, 256], [512, 256, 512], [512, 512, 512]]), "fcnet_activation": "tanh"},
+                             q_model_config={"fcnet_hiddens": tune.grid_search([[256, 256,], [512, 512], [256, 256, 256], [256, 512, 256], [512, 256, 512], [512, 512, 512]]), "fcnet_activation": "tanh"},
+                             policy_model_config={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
                              optimization_config={"actor_learning_rate": 3e-4, "critic_learning_rate": 3e-4, "entropy_learning_rate": 3e-4},
-                             tau=tune.grid_search([0.001, 0.005, 0.01, 1.0]),
+                             tau=0.005,
                              train_batch_size=1024,
                              n_step=1,
                              store_buffer_in_checkpoints=False,

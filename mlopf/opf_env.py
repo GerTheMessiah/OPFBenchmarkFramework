@@ -26,10 +26,10 @@ class OpfEnv(gymnasium.Env, abc.ABC):
             ext_grid_pen_kwargs=None, seed=None, *args, **kwargs):
 
         # Should be always True. Maybe only allow False for paper investigation
-        np.set_printoptions(threshold=sys.maxsize)
         self.train_test_split = train_test_split
         self.train_data = train_data
         self.test_data = test_data
+        self.test_index = 0
 
         if sampling_kwargs:
             self.sampling_kwargs = sampling_kwargs
@@ -197,7 +197,10 @@ class OpfEnv(gymnasium.Env, abc.ABC):
         total_n_steps = len(self.profiles[('load', 'q_mvar')])
         if step is None:
             if test and self.train_test_split:
-                step = np.random.choice(self.test_steps, replace=False)
+                step = self.test_steps[self.test_index]
+                if self.test_index == len(self.test_steps) - 1:
+                    self.test_index = 0
+                self.test_index += 1
             else:
                 while True:
                     step = random.randint(0, total_n_steps - 1)
@@ -220,6 +223,7 @@ class OpfEnv(gymnasium.Env, abc.ABC):
                 # Uniform distribution: noise_factor as relative sample range
                 noise = np.random.random(len(self.net[unit_type].index)) * noise_factor * 2 + (1 - noise_factor)
                 new_values = (data * noise).to_numpy()
+
             elif noise_distribution == 'normal':
                 # Normal distribution: noise_factor as relative std deviation
                 new_values = np.random.normal(loc=data, scale=data.abs() * noise_factor)

@@ -34,7 +34,7 @@ if __name__ == '__main__':
                              num_steps_sampled_before_learning_starts=1024,
                              target_network_update_freq=1,
                              _enable_learner_api=False,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 17, "storage_unit": "timesteps"})
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 

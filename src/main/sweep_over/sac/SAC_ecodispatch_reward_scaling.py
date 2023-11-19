@@ -16,7 +16,7 @@ from src.metric.metric import OPFMetrics
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=True, dashboard_host="0.0.0.0")
+    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
     env_name = "EcoDispatchEnv-v0"
 
@@ -34,13 +34,13 @@ if __name__ == '__main__':
                              num_steps_sampled_before_learning_starts=1024,
                              target_network_update_freq=1,
                              _enable_learner_api=False,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 17, "storage_unit": "timesteps"})
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1, num_cpus_per_learner_worker=1)
 
-    config = config.rollouts(batch_mode="complete_episodes", num_envs_per_worker=1, num_rollout_workers=4, rollout_fragment_length=2, observation_filter="MeanStdFilter",
+    config = config.rollouts(batch_mode="complete_episodes", num_envs_per_worker=1, num_rollout_workers=2, rollout_fragment_length=4, observation_filter="MeanStdFilter",
                              preprocessor_pref=None)
 
     config = config.framework(framework="torch")

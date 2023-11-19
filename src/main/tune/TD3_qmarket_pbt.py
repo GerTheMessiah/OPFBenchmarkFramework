@@ -27,7 +27,7 @@ def make_network_layouts():
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=True, dashboard_host="0.0.0.0")
+    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
     env_name = "QMarketEnv-v0"
     register_env(env_name, lambda c: QMarketEnv(**c))
@@ -35,13 +35,13 @@ if __name__ == '__main__':
     config = TD3Config()
     config = config.training(twin_q=True,
                              smooth_target_policy=False,
-                             critic_lr=tune.choice(np.arange(5e-4, 2.60e-3, 1e-4)),
-                             actor_lr=tune.choice(np.arange(5e-5, 4.10e-4, 1e-5)),
+                             actor_lr=tune.uniform(5e-5, 4.00e-4),
+                             critic_lr=tune.uniform(5e-4, 2.50e-3),
                              gamma=0.99,
-                             tau=tune.choice(np.arange(0.001, 0.011, 0.001)),
+                             tau=tune.uniform(0.001, 0.010),
                              n_step=1,
                              l2_reg=1e-6,
-                             train_batch_size=tune.choice([2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10]),
+                             train_batch_size=tune.choice([2 ** 8, 2 ** 9, 2 ** 10]),
                              actor_hiddens=tune.choice(make_network_layouts()),
                              actor_hidden_activation="tanh",
                              critic_hiddens=tune.choice(make_network_layouts()),
@@ -52,7 +52,7 @@ if __name__ == '__main__':
                              )
 
     config = config.exploration(explore=True,
-                                exploration_config={"type": "GaussianNoise", "stddev": tune.choice(np.arange(0.001, 0.051, 0.001)), "initial_scale": 1.0, "final_scale": 1.0})
+                                exploration_config={"type": "GaussianNoise", "stddev": tune.uniform(0.001, 0.05), "initial_scale": 1.0, "final_scale": 1.0})
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
     config = config.evaluation(evaluation_interval=15000,
                                evaluation_duration=6720,
@@ -85,14 +85,14 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=500, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=750, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
-        "critic_lr": np.arange(5e-4, 2.60e-3, 1.0e-4).tolist(),
-        "actor_lr": np.arange(5e-5, 4.10e-4, 1e-5).tolist(),
-        "tau": np.arange(0.001, 0.01005, 0.0001).tolist(),
-        "train_batch_size": [2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10],
-        "exploration_config": {"stddev": np.arange(0.001, 0.051, 0.001).tolist()},
+        "critic_lr": tune.uniform(5e-5, 4.00e-4),
+        "actor_lr": tune.uniform(5e-4, 2.50e-3),
+        "tau": tune.uniform(0.001, 0.010),
+        "train_batch_size": [2 ** 8, 2 ** 9, 2 ** 10],
+        "exploration_config": {"stddev": tune.uniform(0.001, 0.05)},
         "policy_delay": [1, 2, 3, 4, 5]
     }
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=500,
+                                        perturbation_interval=750,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=3)
@@ -111,8 +111,18 @@ if __name__ == '__main__':
 
     results = Tuner("TD3", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
-    best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope="avg")
-    print('Best result path:', best_result.path)
-    print("Best final iteration hyperparameter config:\n", best_result.config)
+    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/episode_reward_mean", mode="max", scope="last")
+    print('Best result path:', best_result_episode.path)
+    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
+    for i, j in best_result_episode.config.items():
+        print(i, j)
+
+    print()
+
+    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
+    print('Best result path:', best_result_episode.path)
+    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
+    for i, j in best_result_episode.config.items():
+        print(i, j)
 
     ray.shutdown()

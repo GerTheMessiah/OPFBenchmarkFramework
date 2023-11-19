@@ -25,7 +25,7 @@ if __name__ == '__main__':
     config = SACConfig()
     config = config.training(twin_q=True,
                              q_model_config={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
-                             policy_model_config={"fcnet_hiddens": tune.grid_search([[256, 256,], [512, 512], [256, 256, 256], [256, 512, 256], [512, 256, 512], [512, 512, 512]]), "fcnet_activation": "tanh"},
+                             policy_model_config={"fcnet_hiddens": tune.grid_search([[256, 256], [512, 512], [256, 256, 256], [256, 512, 256], [512, 256, 512], [512, 512, 512]]), "fcnet_activation": "tanh"},
                              optimization_config={"actor_learning_rate": 3e-4, "critic_learning_rate": 3e-4, "entropy_learning_rate": 3e-4},
                              tau=0.005,
                              train_batch_size=1024,
@@ -34,7 +34,7 @@ if __name__ == '__main__':
                              num_steps_sampled_before_learning_starts=1024,
                              target_network_update_freq=1,
                              _enable_learner_api=False,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 17, "storage_unit": "timesteps"})
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 

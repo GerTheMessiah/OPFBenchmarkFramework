@@ -16,7 +16,7 @@ from src.metric.metric import OPFMetrics
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=True, dashboard_host="0.0.0.0")
+    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
     env_name = "EcoDispatchEnv-v0"
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
                              num_steps_sampled_before_learning_starts=1024,
                              target_network_update_freq=1,
                              _enable_learner_api=False,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 17, "storage_unit": "timesteps"})
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 

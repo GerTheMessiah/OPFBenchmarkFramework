@@ -33,7 +33,7 @@ if __name__ == '__main__':
                              n_step=1,
                              store_buffer_in_checkpoints=False,
                              num_steps_sampled_before_learning_starts=1024,
-                             target_network_update_freq=1,
+                             target_network_update_freq=500,
                              _enable_learner_api=False,
                              replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
 
@@ -46,8 +46,8 @@ config = config.rollouts(batch_mode="complete_episodes", num_envs_per_worker=1, 
 
 config = config.framework(framework="torch")
 
-config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 40000, "add_act_obs": False}, disable_env_checking=True, normalize_actions=False,
-                            clip_actions=False)
+config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 40000, "add_act_obs": False}, disable_env_checking=True, normalize_actions=True,
+                            clip_actions=True)
 
 config = config.debugging(log_level="ERROR", seed=tune.choice(list(range(101, 200))), log_sys_usage=False)
 

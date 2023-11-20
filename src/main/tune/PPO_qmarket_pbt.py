@@ -81,7 +81,7 @@ if __name__ == '__main__':
         "sgd_minibatch_size": [128, 256, 512, 1024],
         "num_sgd_iter": [3, 4, 5, 6, 7, 8, 9, 10],
         "clip_param": tune.uniform(0.1, 0.3),
-        "vf_loss_coeff": tune.uniform(0.5, 1.0),
+        "vf_loss_coeff": tune.uniform(0.7, 1.0),
         "entropy_coeff": tune.uniform(0.0, 0.01),
     }
 

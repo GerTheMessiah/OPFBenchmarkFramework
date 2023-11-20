@@ -31,7 +31,7 @@ if __name__ == '__main__':
     config = A2CConfig()
     config = config.training(use_critic=True,
                              use_gae=False,
-                             lr=tune.uniform(5e-5, 4e-4),
+                             lr=tune.uniform(1e-4, 4e-4),
                              vf_loss_coeff=tune.uniform(0.5, 1.0),
                              entropy_coeff=tune.uniform(0, 0.01),
                              train_batch_size=tune.choice([128, 256, 512, 1024]),
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
     config = config.evaluation(evaluation_interval=1000,
                                evaluation_duration=6720,

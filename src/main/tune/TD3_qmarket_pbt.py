@@ -38,7 +38,7 @@ if __name__ == '__main__':
                              actor_lr=tune.uniform(5e-5, 4.00e-4),
                              critic_lr=tune.uniform(5e-4, 2.50e-3),
                              gamma=0.99,
-                             tau=tune.uniform(0.001, 0.010),
+                             tau=tune.uniform(0.001, 0.01),
                              n_step=1,
                              l2_reg=1e-6,
                              train_batch_size=tune.choice([2 ** 8, 2 ** 9, 2 ** 10]),
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     hyperparameters_mutations = {
         "critic_lr": tune.uniform(5e-5, 4.00e-4),
         "actor_lr": tune.uniform(5e-4, 2.50e-3),
-        "tau": tune.uniform(0.001, 0.010),
+        "tau": tune.uniform(0.001, 0.01),
         "train_batch_size": [2 ** 8, 2 ** 9, 2 ** 10],
         "exploration_config": {"stddev": tune.uniform(0.001, 0.05)},
         "policy_delay": [1, 2, 3, 4, 5]

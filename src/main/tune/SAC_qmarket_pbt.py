@@ -36,8 +36,7 @@ if __name__ == '__main__':
                              policy_model_config={"fcnet_hiddens": tune.choice(make_policy_model_layouts()), "fcnet_activation": "tanh"},
                              optimization_config={"actor_learning_rate": tune.uniform(1e-4, 1e-3),
                                                   "critic_learning_rate": tune.uniform(1e-4, 1e-3),
-                                                  "entropy_learning_rate": tune.uniform(5e-5, 7e-4)
-                                                  },
+                                                  "entropy_learning_rate": tune.uniform(5e-5, 7e-4)},
                              tau=tune.uniform(0.001, 1.0),
                              train_batch_size=tune.choice([128, 256, 512, 1024]),
                              n_step=1,
@@ -62,8 +61,8 @@ config = config.rollouts(batch_mode="complete_episodes",
 
 config = config.framework(framework="torch")
 
-config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 50, "add_act_obs": False}, disable_env_checking=True, normalize_actions=False,
-                            clip_actions=False)
+config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 50, "add_act_obs": False}, disable_env_checking=True, normalize_actions=True,
+                            clip_actions=True)
 
 config = config.debugging(log_level="ERROR", seed=tune.choice(list(range(101, 200))), log_sys_usage=False)
 
@@ -71,12 +70,12 @@ config = config.rl_module(_enable_rl_module_api=False)
 
 config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
-config = config.evaluation(evaluation_interval=15000, evaluation_duration=6720,
+config = config.evaluation(evaluation_interval=25000, evaluation_duration=6720,
                            evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
 config = config.callbacks(OPFMetrics)
 
-checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=750, checkpoint_at_end=True)
+checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=1250, checkpoint_at_end=True)
 
 hyperparameters_mutations = {
     "optimization": {
@@ -86,15 +85,18 @@ hyperparameters_mutations = {
     },
     "tau": tune.uniform(0.001, 0.01),
     "train_batch_size": [2 ** 8, 2 ** 9, 2 ** 10],
-
     }
 
-scheduler = PopulationBasedTraining(time_attr="training_iteration", metric="episode_reward_mean", mode="max", hyperparam_mutations=hyperparameters_mutations,
-                                    perturbation_interval=750, require_attrs=False)
+scheduler = PopulationBasedTraining(time_attr="training_iteration",
+                                    metric="episode_reward_mean",
+                                    mode="max",
+                                    hyperparam_mutations=hyperparameters_mutations,
+                                    perturbation_interval=1250,
+                                    require_attrs=False)
 
 failure_config = FailureConfig(max_failures=2)
 
-run_config = RunConfig(stop=MaximumIterationStopper(max_iter=15000), checkpoint_config=checkpoint_config, failure_config=failure_config)
+run_config = RunConfig(stop=MaximumIterationStopper(max_iter=25000), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
 tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
 

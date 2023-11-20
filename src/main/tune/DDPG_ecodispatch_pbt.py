@@ -51,8 +51,14 @@ if __name__ == '__main__':
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
-    config = config.rollouts(batch_mode="complete_episodes", num_envs_per_worker=1, enable_connectors=False, num_rollout_workers=2, rollout_fragment_length=4,
-                             observation_filter="MeanStdFilter", preprocessor_pref=None, create_env_on_local_worker=True)
+    config = config.rollouts(batch_mode="complete_episodes",
+                             num_envs_per_worker=1,
+                             enable_connectors=False,
+                             num_rollout_workers=2,
+                             rollout_fragment_length=4,
+                             observation_filter="MeanStdFilter",
+                             preprocessor_pref=None,
+                             create_env_on_local_worker=True)
 
     config = config.framework(framework="torch")
 

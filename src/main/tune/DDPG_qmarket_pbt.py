@@ -32,8 +32,8 @@ if __name__ == '__main__':
     config = DDPGConfig()
     config = config.training(twin_q=False,
                              smooth_target_policy=False,
-                             critic_lr=tune.uniform(5e-4, 2.50e-3),
                              actor_lr=tune.uniform(5e-5, 4.00e-4),
+                             critic_lr=tune.uniform(5e-4, 2.50e-3),
                              gamma=0.99,
                              tau=tune.uniform(0.001, 0.01),
                              n_step=1,

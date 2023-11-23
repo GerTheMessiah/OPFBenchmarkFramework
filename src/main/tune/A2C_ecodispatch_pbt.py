@@ -96,6 +96,7 @@ if __name__ == '__main__':
     tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("A2C", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
+
     print("-------------------------------------------------------------------------------------------------------")
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/episode_reward_mean", mode="max", scope="last")
     print('Best result path:', best_result_episode.path)

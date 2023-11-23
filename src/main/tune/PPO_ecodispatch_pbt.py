@@ -4,14 +4,13 @@ import os
 os.environ["TUNE_DISABLE_STRICT_METRIC_CHECKING"] = "1"
 
 from ray.rllib.algorithms.ppo import PPOConfig
-import numpy as np
 from ray import tune
 from ray.air import RunConfig, CheckpointConfig, FailureConfig
 from ray.tune.schedulers import PopulationBasedTraining
 
 from ray.tune.stopper import MaximumIterationStopper
 
-from mlopf.envs.thesis_envs import QMarketEnv, EcoDispatchEnv
+from mlopf.envs.thesis_envs import EcoDispatchEnv
 import ray
 from ray.tune import register_env, Tuner, TuneConfig
 
@@ -54,7 +53,7 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=2,
+                             num_rollout_workers=4,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None)
@@ -72,15 +71,15 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
-    config = config.evaluation(evaluation_interval=260,
+    config = config.evaluation(evaluation_interval=300,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=13, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=6, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "lr": tune.uniform(5e-5, 3e-4),
@@ -96,31 +95,30 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=13,
+                                        perturbation_interval=6,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=3)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=260), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=300), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
     tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("PPO", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
-    best_result = results.get_best_result(metric="episode_reward_mean", mode="max", scope="avg")
-
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/episode_reward_mean", mode="max", scope="last")
+    print("-------------------------------------------------------------------------------------------------------")
+
     print('Best result path:', best_result_episode.path)
-    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
     for i, j in best_result_episode.config.items():
         print(i, j)
 
-    print()
+    print("-------------------------------------------------------------------------------------------------------")
 
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
     print('Best result path:', best_result_episode.path)
-    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
     for i, j in best_result_episode.config.items():
         print(i, j)
+    print("-------------------------------------------------------------------------------------------------------")
 
     ray.shutdown()

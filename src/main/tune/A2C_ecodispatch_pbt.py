@@ -31,10 +31,10 @@ if __name__ == '__main__':
     config = A2CConfig()
     config = config.training(use_critic=True,
                              use_gae=False,
-                             lr=tune.uniform(1e-4, 4e-4),
+                             lr=tune.uniform(5e-5, 4e-4),
                              vf_loss_coeff=tune.uniform(0.5, 1.0),
-                             entropy_coeff=tune.uniform(0, 0.01),
-                             train_batch_size=tune.choice([128, 256, 512, 1024]),
+                             entropy_coeff=tune.uniform(0.0, 0.01),
+                             train_batch_size=tune.choice([2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10]),
                              model={"fcnet_hiddens": tune.choice(make_network_layouts()), "fcnet_activation": "tanh"},
                              _enable_learner_api=False)
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
                              enable_connectors=False,
-                             num_rollout_workers=2,
+                             num_rollout_workers=4,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
 
-    config = config.evaluation(evaluation_interval=1000,
+    config = config.evaluation(evaluation_interval=1200,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     hyperparameters_mutations = {
         "lr": tune.uniform(5e-5, 4e-4),
         "vf_loss_coeff": tune.uniform(0.5, 1.0),
-        "entropy_coeff": tune.uniform(0, 0.01),
+        "entropy_coeff": tune.uniform(0.0, 0.01),
         "train_batch_size": [2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10],
     }
 
@@ -84,30 +84,30 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=50,
+                                        perturbation_interval=24,
                                         require_attrs=False)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=50, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=24, checkpoint_at_end=True)
 
     failure_config = FailureConfig(max_failures=3)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=1000), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=1200), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
     tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("A2C", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
+    print("-------------------------------------------------------------------------------------------------------")
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/episode_reward_mean", mode="max", scope="last")
     print('Best result path:', best_result_episode.path)
-    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
     for i, j in best_result_episode.config.items():
         print(i, j)
 
-    print()
+    print("-------------------------------------------------------------------------------------------------------")
 
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
     print('Best result path:', best_result_episode.path)
-    print("Best final iteration hyperparameter config:\n", best_result_episode.config)
     for i, j in best_result_episode.config.items():
         print(i, j)
+    print("-------------------------------------------------------------------------------------------------------")
 
     ray.shutdown()

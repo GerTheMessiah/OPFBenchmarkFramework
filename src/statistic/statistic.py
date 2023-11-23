@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(10, 7.5))
     plt.xlabel('Training iterations')
-    plt.ylabel(metric.split('/')[-1].replace("_", " ").capitalize())
+    plt.ylabel('Valid solutions mean')
     plt.grid(True)
     colors = ["blue", "red", "cyan", "green", "purple", "orange", "magenta", "yellowgreen", "dodgerblue", "black"]
 

@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=6, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=12, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "lr": tune.uniform(5e-5, 3e-4),
@@ -95,7 +95,7 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=6,
+                                        perturbation_interval=12,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=3)

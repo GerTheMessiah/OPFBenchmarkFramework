@@ -39,7 +39,7 @@ if __name__ == '__main__':
                              sgd_minibatch_size=tune.choice([256, 512, 1024]),
                              num_sgd_iter=tune.choice([3, 4, 5, 6, 7, 8, 9, 10]),
                              clip_param=tune.uniform(0.1, 0.3),
-                             vf_loss_coeff=tune.uniform(0.7, 1.0),
+                             vf_loss_coeff=tune.uniform(0.5, 1.0),
                              entropy_coeff=tune.uniform(0.0, 0.01),
                              shuffle_sequences=True,
                              gamma=0.99,
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=6, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=12, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "lr": tune.uniform(5e-5, 5e-4),
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         "sgd_minibatch_size": [256, 512, 1024],
         "num_sgd_iter": [3, 4, 5, 6, 7, 8, 9, 10],
         "clip_param": tune.uniform(0.1, 0.3),
-        "vf_loss_coeff": tune.uniform(0.7, 1.0),
+        "vf_loss_coeff": tune.uniform(0.5, 1.0),
         "entropy_coeff": tune.uniform(0.0, 0.01),
     }
 
@@ -90,7 +90,7 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=6,
+                                        perturbation_interval=12,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=3)

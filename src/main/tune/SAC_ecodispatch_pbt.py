@@ -52,8 +52,8 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=4,
-                             rollout_fragment_length=2,
+                             num_rollout_workers=8,
+                             rollout_fragment_length=1,
                              enable_connectors=False,
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
@@ -68,14 +68,14 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=30000, evaluation_duration=6720,
+    config = config.evaluation(evaluation_interval=110000, evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=1200, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=10000, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "optimization": {
@@ -83,7 +83,7 @@ if __name__ == '__main__':
             "critic_learning_rate": tune.uniform(5e-5, 2e-3),
             "entropy_learning_rate": tune.uniform(3e-4, 1.5e-3)
         },
-        "tau": tune.uniform(0.001, 0.01),
+        "tau": tune.uniform(0.001, 1.0),
         "train_batch_size": [128, 256, 512, 1024],
         }
 
@@ -91,14 +91,15 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=1200,
+                                        perturbation_interval=10000,
+                                        burn_in_period=10000,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=2)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=30000), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=110000), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
-    tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
+    tune_config = TuneConfig(num_samples=50, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("SAC", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
@@ -110,9 +111,4 @@ if __name__ == '__main__':
 
     print("-------------------------------------------------------------------------------------------------------")
 
-    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
-    print('Best result path:', best_result_episode.path)
-    for i, j in best_result_episode.config.items():
-        print(i, j)
-    print("-------------------------------------------------------------------------------------------------------")
     ray.shutdown()

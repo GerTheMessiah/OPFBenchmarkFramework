@@ -90,6 +90,8 @@ if __name__ == '__main__':
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
                                         perturbation_interval=800,
+                                        burn_in_period=10000,
+                                        synch=True,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=2)
@@ -108,11 +110,4 @@ if __name__ == '__main__':
         print(i, j)
 
     print("-------------------------------------------------------------------------------------------------------")
-
-    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
-    print('Best result path:', best_result_episode.path)
-    for i, j in best_result_episode.config.items():
-        print(i, j)
-    print("-------------------------------------------------------------------------------------------------------")
-
     ray.shutdown()

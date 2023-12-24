@@ -4,7 +4,6 @@ import os
 os.environ["TUNE_DISABLE_STRICT_METRIC_CHECKING"] = "1"
 
 from ray.rllib.algorithms.ppo import PPOConfig
-import numpy as np
 from ray import tune
 from ray.air import RunConfig, CheckpointConfig, FailureConfig
 from ray.tune.schedulers import PopulationBasedTraining
@@ -48,11 +47,11 @@ if __name__ == '__main__':
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 
-    config = config.resources(num_gpus=0, num_cpus_per_worker=1, num_cpus_per_learner_worker=1)
+    config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=4,
+                             num_rollout_workers=9,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
@@ -60,21 +59,24 @@ if __name__ == '__main__':
 
     config = config.framework(framework="torch")
 
-    config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 50, "add_act_obs": False}, disable_env_checking=True, normalize_actions=False,
+    config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 50, "add_act_obs": False},
+                                disable_env_checking=True,
+                                normalize_actions=False,
                                 clip_actions=False)
 
     config = config.debugging(log_level="ERROR", seed=tune.choice(list(range(101, 200))), log_sys_usage=False)
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=300, evaluation_duration=6720,
+    config = config.evaluation(evaluation_interval=1100,
+                               evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=12, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=100, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "lr": tune.uniform(5e-5, 5e-4),
@@ -90,18 +92,20 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=12,
+                                        perturbation_interval=100,
+                                        burn_in_period=100,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=3)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=300), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=1100), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
-    tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
+    tune_config = TuneConfig(num_samples=50, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("PPO", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
     best_result_episode = results.get_best_result(metric="evaluation/sampler_results/episode_reward_mean", mode="max", scope="last")
+
     print("-------------------------------------------------------------------------------------------------------")
     print('Best result path:', best_result_episode.path)
     for i, j in best_result_episode.config.items():
@@ -109,10 +113,4 @@ if __name__ == '__main__':
 
     print("-------------------------------------------------------------------------------------------------------")
 
-    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
-    print('Best result path:', best_result_episode.path)
-    for i, j in best_result_episode.config.items():
-        print(i, j)
-
-    print("-------------------------------------------------------------------------------------------------------")
     ray.shutdown()

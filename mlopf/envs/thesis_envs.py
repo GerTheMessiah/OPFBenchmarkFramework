@@ -138,7 +138,7 @@ class QMarketEnv(opf_env.OpfEnv):
 
         if 'ext_grid_pen_kwargs' not in kwargs:
             kwargs['ext_grid_pen_kwargs'] = {'linear_penalty': 500}
-        super().__init__(seed=seed, *args, **kwargs)
+        super(QMarketEnv, self).__init__(seed=seed, *args, **kwargs)
 
         if self.vector_reward is True:
             # 2 penalties and `n_sgen+1` objective functions

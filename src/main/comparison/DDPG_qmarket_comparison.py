@@ -25,23 +25,23 @@ if __name__ == '__main__':
     config = config.training(twin_q=False,
                              smooth_target_policy=False,
                              target_noise=0.1,
-                             critic_lr=0.0006739,
-                             actor_lr=0.0003721,
-                             actor_hiddens=[256, 256],
+                             critic_lr=0.0016824,
+                             actor_lr=4.470888e-5,
+                             actor_hiddens=[512, 256, 256],
                              actor_hidden_activation="tanh",
                              critic_hiddens=[256, 512, 512],
                              critic_hidden_activation="tanh",
                              gamma=0.99,
-                             tau=0.007423,
+                             tau=0.011193,
                              n_step=1,
                              l2_reg=1e-6,
-                             train_batch_size=1024,
+                             train_batch_size=256,
                              use_huber=False,
                              huber_threshold=1.0,
                              replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"},
                              _enable_learner_api=False)
 
-    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.024834, "initial_scale": 1.0, "final_scale": 1.0})
+    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0125383, "initial_scale": 1.0, "final_scale": 1.0})
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
 
-    config = config.evaluation(evaluation_interval=15000,
+    config = config.evaluation(evaluation_interval=20000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
 
-    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=15000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=20000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 

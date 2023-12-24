@@ -24,12 +24,12 @@ if __name__ == '__main__':
 
     config = SACConfig()
     config = config.training(twin_q=True,
-                             q_model_config={"fcnet_hiddens": [256, 256, 512], "fcnet_activation": "tanh"},
-                             policy_model_config={"fcnet_hiddens": [256, 256, 512], "fcnet_activation": "tanh"},
-                             optimization_config={"actor_learning_rate": 0.00117437, "critic_learning_rate": 0.00038143, "entropy_learning_rate": 0.000996160},
-                             tau=0.0059496,
-                             initial_alpha=0.489027,
-                             train_batch_size=1024,
+                             q_model_config={"fcnet_hiddens": [512, 512, 512], "fcnet_activation": "tanh"},
+                             policy_model_config={"fcnet_hiddens": [512, 512, 256], "fcnet_activation": "tanh"},
+                             optimization_config={"actor_learning_rate": 0.0004277, "critic_learning_rate": 0.000390738, "entropy_learning_rate": 0.000966634},
+                             tau=0.198518,
+                             initial_alpha=0.553797,
+                             train_batch_size=256,
                              n_step=1,
                              store_buffer_in_checkpoints=False,
                              num_steps_sampled_before_learning_starts=1024,
@@ -41,8 +41,13 @@ if __name__ == '__main__':
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1, num_cpus_per_learner_worker=1)
 
-    config = config.rollouts(batch_mode="complete_episodes", num_envs_per_worker=1, num_rollout_workers=8, rollout_fragment_length=1, observation_filter="MeanStdFilter",
-                             preprocessor_pref=None)
+    config = config.rollouts(batch_mode="complete_episodes",
+                             num_envs_per_worker=1,
+                             num_rollout_workers=11,
+                             rollout_fragment_length=1,
+                             observation_filter="MeanStdFilter",
+                             preprocessor_pref=None,
+                             create_env_on_local_worker=False)
 
     config = config.framework(framework="torch")
 
@@ -56,9 +61,9 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=25000,
+    config = config.evaluation(evaluation_interval=60000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
@@ -66,7 +71,7 @@ if __name__ == '__main__':
 
     checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
 
-    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=25000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=60000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 

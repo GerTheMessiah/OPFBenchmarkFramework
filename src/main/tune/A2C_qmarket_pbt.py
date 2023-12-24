@@ -12,10 +12,8 @@ from mlopf.envs.thesis_envs import QMarketEnv
 import ray
 from ray.tune import register_env, Tuner, TuneConfig
 
-from src.metric.metric import OPFMetrics
-
 def make_network_layouts() -> list:
-    return [(256, 256), (256, 512), (512, 256), (512, 512), (256, 256, 256), (256, 256, 512), (256, 512, 256), (256, 512, 512), (512, 256, 256), (512, 512, 256), (512, 512, 512)]
+    return [(256, 256), (256, 512), (512, 256), (512, 512), (256, 256, 256), (256, 256, 512), (256, 512, 256), (256, 512, 512)]
 
 
 if __name__ == '__main__':
@@ -30,7 +28,7 @@ if __name__ == '__main__':
     config = A2CConfig()
     config = config.training(use_critic=True,
                              use_gae=False,
-                             lr=tune.uniform(5e-5, 4e-4),
+                             lr=tune.uniform(5e-5, 3e-4),
                              vf_loss_coeff=tune.uniform(0.5, 1.0),
                              entropy_coeff=tune.uniform(0.0, 0.001),
                              train_batch_size=tune.choice([2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10]),
@@ -44,11 +42,11 @@ if __name__ == '__main__':
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
                              enable_connectors=False,
-                             num_rollout_workers=4,
+                             num_rollout_workers=9,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
-                             create_env_on_local_worker=False)
+                             create_env_on_local_worker=True)
 
     config = config.framework(framework="torch")
 
@@ -62,18 +60,16 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=1200,
+    config = config.evaluation(evaluation_interval=6000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
-    config = config.callbacks(OPFMetrics)
-
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=48, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=500, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
-        "lr": tune.uniform(5e-5, 4e-4),
+        "lr": tune.uniform(5e-5, 3e-4),
         "vf_loss_coeff": tune.uniform(0.5, 1.0),
         "entropy_coeff": tune.uniform(0.0, 0.001),
         "train_batch_size": [2 ** 7, 2 ** 8, 2 ** 9, 2 ** 10],
@@ -83,14 +79,15 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=48,
+                                        perturbation_interval=500,
+                                        burn_in_period=1000,
                                         require_attrs=False)
 
     failure_config = FailureConfig(max_failures=2)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=1200), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=6000), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
-    tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
+    tune_config = TuneConfig(num_samples=50, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("A2C", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
@@ -103,10 +100,4 @@ if __name__ == '__main__':
 
     print("-------------------------------------------------------------------------------------------------------")
 
-    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
-    print('Best result path:', best_result_episode.path)
-    for i, j in best_result_episode.config.items():
-        print(i, j)
-
-    print("-------------------------------------------------------------------------------------------------------")
     ray.shutdown()

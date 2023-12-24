@@ -7,7 +7,7 @@ from ray.rllib.algorithms.a2c import A2CConfig
 
 from ray.tune.stopper import MaximumIterationStopper
 
-from mlopf.envs.thesis_envs import QMarketEnv
+from mlopf.envs.thesis_envs import EcoDispatchEnv
 import ray
 from ray.tune import register_env, Tuner, TuneConfig
 
@@ -17,18 +17,19 @@ from src.metric.metric import OPFMetrics
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
-    env_name = "QMarketEnv-v0"
+    env_name = "EcoDispatchEnv-v0"
 
-    register_env(env_name, lambda c: QMarketEnv(**c))
+    register_env(env_name, lambda c: EcoDispatchEnv(**c))
 
     config = A2CConfig()
     config = config.training(use_critic=True,
                              use_gae=False,
-                             lr=0.00019986,
-                             vf_loss_coeff=0.8866448,
-                             entropy_coeff=0.0035094,
+                             lr=0.000119347,
+                             vf_loss_coeff=0.61379,
+                             entropy_coeff=0.00284288,
                              train_batch_size=1024,
                              model={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
                              _enable_learner_api=False)
@@ -39,7 +40,7 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=11,
+                             num_rollout_workers=24,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None)
@@ -55,17 +56,17 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=1000,
+    config = config.evaluation(evaluation_interval=6000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=False)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
 
-    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=1000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=6000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 

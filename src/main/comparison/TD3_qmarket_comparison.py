@@ -16,7 +16,7 @@ from src.metric.metric import OPFMetrics
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=ResourceWarning)
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=True, dashboard_host="0.0.0.0")
+    ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
 
     env_name = "QMarketEnv-v0"
     register_env(env_name, lambda c: QMarketEnv(**c))
@@ -24,24 +24,24 @@ if __name__ == '__main__':
     config = TD3Config()
     config = config.training(twin_q=True,
                              smooth_target_policy=False,
-                             critic_lr=0.000180,
-                             actor_lr=0.002129,
-                             actor_hiddens=[512, 256, 256],
+                             critic_lr=0.000540143,
+                             actor_lr=0.000188169,
+                             actor_hiddens=[512, 512],
                              actor_hidden_activation="tanh",
-                             critic_hiddens=[512, 512],
+                             critic_hiddens=[512, 256, 512],
                              critic_hidden_activation="tanh",
                              gamma=0.99,
-                             tau=0.0032520,
+                             tau=0.0013521,
                              n_step=1,
                              l2_reg=1e-6,
                              train_batch_size=1024,
-                             policy_delay=5,
+                             policy_delay=3,
                              use_huber=False,
                              huber_threshold=1.0,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"},
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 19, "storage_unit": "timesteps"},
                              _enable_learner_api=False)
 
-    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.032905, "initial_scale": 1.0, "final_scale": 1.0})
+    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0241369, "initial_scale": 1.0, "final_scale": 1.0})
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
@@ -50,7 +50,8 @@ if __name__ == '__main__':
                              num_rollout_workers=8,
                              rollout_fragment_length=1,
                              observation_filter="MeanStdFilter",
-                             preprocessor_pref=None)
+                             preprocessor_pref=None,
+                             create_env_on_local_worker=False)
 
     config = config.framework(framework="torch")
 
@@ -64,17 +65,17 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=15000,
+    config = config.evaluation(evaluation_interval=60000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=1000, checkpoint_at_end=True)
 
-    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=15000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=60000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 

@@ -36,17 +36,16 @@ if __name__ == '__main__':
                              smooth_target_policy=False,
                              actor_lr=tune.uniform(5e-5, 4.00e-4),
                              critic_lr=tune.uniform(5e-4, 2.50e-3),
-                             gamma=0.99,
+                             train_batch_size=tune.choice([2 ** 8, 2 ** 9, 2 ** 10]),
                              tau=tune.uniform(0.001, 0.01),
                              n_step=1,
-                             l2_reg=1e-6,
-                             train_batch_size=tune.choice([2 ** 8, 2 ** 9, 2 ** 10]),
+                             gamma=0.99,
                              actor_hiddens=tune.choice(make_actor_network_layouts()),
                              actor_hidden_activation="tanh",
                              critic_hiddens=tune.choice(make_critic_network_layouts()),
                              critic_hidden_activation="tanh",
                              _enable_learner_api=False,
-                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 18, "storage_unit": "timesteps"})
+                             replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 20, "storage_unit": "timesteps"})
 
     config = config.exploration(explore=True,
                                 exploration_config={"type": "GaussianNoise", "stddev": tune.uniform(0.001, 0.05), "initial_scale": 1.0, "final_scale": 1.0})
@@ -60,7 +59,7 @@ if __name__ == '__main__':
                              rollout_fragment_length=2,
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
-                             create_env_on_local_worker=True)
+                             create_env_on_local_worker=False)
 
     config = config.framework(framework="torch")
 
@@ -73,15 +72,15 @@ if __name__ == '__main__':
 
     config = config.rl_module(_enable_rl_module_api=False)
 
-    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=100)
+    config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=20000,
+    config = config.evaluation(evaluation_interval=110000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=800, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=None, checkpoint_frequency=10000, checkpoint_at_end=True)
 
     hyperparameters_mutations = {
         "actor_lr": tune.uniform(5e-5, 4.00e-4),
@@ -95,14 +94,15 @@ if __name__ == '__main__':
                                         metric="episode_reward_mean",
                                         mode="max",
                                         hyperparam_mutations=hyperparameters_mutations,
-                                        perturbation_interval=800,
-                                        require_attrs=False)
+                                        perturbation_interval=10000,
+                                        require_attrs=False,
+                                        burn_in_period=10000)
 
     failure_config = FailureConfig(max_failures=2)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=20000), checkpoint_config=checkpoint_config, failure_config=failure_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=110000), checkpoint_config=checkpoint_config, failure_config=failure_config)
 
-    tune_config = TuneConfig(num_samples=100, reuse_actors=False, scheduler=scheduler)
+    tune_config = TuneConfig(num_samples=50, reuse_actors=False, scheduler=scheduler)
 
     results = Tuner("DDPG", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
@@ -113,12 +113,6 @@ if __name__ == '__main__':
     for i, j in best_result_episode.config.items():
         print(i, j)
 
-    print("-------------------------------------------------------------------------------------------------------")
-
-    best_result_episode = results.get_best_result(metric="evaluation/sampler_results/custom_metrics/valids_mean", mode="max", scope="last")
-    print('Best result path:', best_result_episode.path)
-    for i, j in best_result_episode.config.items():
-        print(i, j)
     print("-------------------------------------------------------------------------------------------------------")
 
     ray.shutdown()

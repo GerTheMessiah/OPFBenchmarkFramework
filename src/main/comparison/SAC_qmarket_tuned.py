@@ -24,12 +24,12 @@ if __name__ == '__main__':
 
     config = SACConfig()
     config = config.training(twin_q=True,
-                             q_model_config={"fcnet_hiddens": [512, 512, 512], "fcnet_activation": "tanh"},
-                             policy_model_config={"fcnet_hiddens": [512, 512, 256], "fcnet_activation": "tanh"},
-                             optimization_config={"actor_learning_rate": 0.0004277, "critic_learning_rate": 0.000390738, "entropy_learning_rate": 0.000966634},
-                             tau=0.198518,
-                             initial_alpha=0.553797,
-                             train_batch_size=256,
+                             q_model_config={"fcnet_hiddens": [512, 256, 512], "fcnet_activation": "tanh"},
+                             policy_model_config={"fcnet_hiddens": [256, 512, 256], "fcnet_activation": "tanh"},
+                             optimization_config={"actor_learning_rate": 0.0005687, "critic_learning_rate": 0.00043889, "entropy_learning_rate": 0.00113877},
+                             tau=0.0094264,
+                             initial_alpha=0.8130879,
+                             train_batch_size=1024,
                              n_step=1,
                              store_buffer_in_checkpoints=False,
                              num_steps_sampled_before_learning_starts=1024,
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=8,
+                             num_rollout_workers=7,
                              rollout_fragment_length=1,
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
@@ -67,14 +67,14 @@ if __name__ == '__main__':
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 50, "add_act_obs": False}})
 
+    config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=2, checkpoint_frequency=100, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=6000, checkpoint_at_end=True)
 
     run_config = RunConfig(stop=MaximumIterationStopper(max_iter=60000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 
-    tuner = Tuner.restore("/fs/dss/home/zahl4814/ray_results/SAC_2023-12-22_00-10-02/", trainable="SAC", resume_unfinished=True, param_space=config.to_dict())
-    tuner.fit()
+    res = Tuner("SAC", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
     ray.shutdown()

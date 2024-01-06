@@ -19,7 +19,6 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     ray.init(address="auto", log_to_driver=False, _redis_password=os.environ["redis_password"], include_dashboard=False, dashboard_host="0.0.0.0")
-
     env_name = "EcoDispatchEnv-v0"
 
     register_env(env_name, lambda c: EcoDispatchEnv(**c))
@@ -27,12 +26,12 @@ if __name__ == '__main__':
     config = A2CConfig()
     config = config.training(use_critic=True,
                              use_gae=False,
-                             lr=0.000119347,
-                             vf_loss_coeff=0.61379,
-                             entropy_coeff=0.00284288,
-                             train_batch_size=1024,
+                             lr=0.000152517,
+                             vf_loss_coeff=0.512158,
+                             entropy_coeff=0.00029668,
+                             train_batch_size=512,
                              model={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
-                             _enable_learner_api=False)
+                             sample_async=False)
 
     config = config.exploration(explore=True, exploration_config={"type": "StochasticSampling"})
 
@@ -40,9 +39,10 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=24,
+                             num_rollout_workers=7,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
+                             enable_connectors=False,
                              preprocessor_pref=None)
 
     config = config.framework(framework="torch")
@@ -50,15 +50,13 @@ if __name__ == '__main__':
     config = config.environment(env=env_name, env_config={"eval": False, "reward_scaling": 1 / 40000, "add_act_obs": False},
                                 disable_env_checking=True,
                                 normalize_actions=False,
-                                clip_actions=False)
+                                clip_actions=True)
 
     config = config.debugging(log_level="ERROR", seed=tune.grid_search([243, 270, 417, 489, 586, 697, 728, 801, 839, 908]))
 
-    config = config.rl_module(_enable_rl_module_api=False)
-
     config = config.reporting(min_sample_timesteps_per_iteration=0, min_time_s_per_iteration=0, metrics_num_episodes_for_smoothing=1)
 
-    config = config.evaluation(evaluation_interval=6000,
+    config = config.evaluation(evaluation_interval=5000,
                                evaluation_duration=6720,
                                evaluation_config={"explore": False, "env_config": {"eval": True, "reward_scaling": 1 / 40000, "add_act_obs": False}})
 
@@ -66,7 +64,7 @@ if __name__ == '__main__':
 
     checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
 
-    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=6000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=5000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 

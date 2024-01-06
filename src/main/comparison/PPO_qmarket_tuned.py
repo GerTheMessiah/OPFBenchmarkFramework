@@ -25,7 +25,7 @@ if __name__ == '__main__':
     config = config.training(use_critic=True,
                              use_gae=False,
                              use_kl_loss=False,
-                             lr=0.000089266,
+                             lr=8.9266e-05,
                              train_batch_size=8192,
                              sgd_minibatch_size=512,
                              num_sgd_iter=3,
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=24,
+                             num_rollout_workers=7,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None)

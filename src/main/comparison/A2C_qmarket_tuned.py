@@ -39,9 +39,10 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=8,
+                             num_rollout_workers=7,
                              rollout_fragment_length="auto",
                              observation_filter="MeanStdFilter",
+                             enable_connectors=False,
                              preprocessor_pref=None)
 
     config = config.framework(framework="torch")

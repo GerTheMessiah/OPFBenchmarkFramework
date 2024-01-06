@@ -3,7 +3,7 @@ import os
 
 from ray import tune
 from ray.air import RunConfig, CheckpointConfig
-from ray.rllib.algorithms.td3 import TD3Config
+from ray.rllib.algorithms.ddpg import DDPGConfig
 
 from ray.tune.stopper import MaximumIterationStopper
 
@@ -21,37 +21,33 @@ if __name__ == '__main__':
     env_name = "QMarketEnv-v0"
     register_env(env_name, lambda c: QMarketEnv(**c))
 
-    config = TD3Config()
-    config = config.training(twin_q=True,
+    config = DDPGConfig()
+    config = config.training(twin_q=False,
                              smooth_target_policy=False,
-                             critic_lr=0.000540143,
-                             actor_lr=0.000188169,
+                             actor_lr=0.000162947,
+                             critic_lr=0.00121511,
                              actor_hiddens=[512, 512],
                              actor_hidden_activation="tanh",
-                             critic_hiddens=[512, 256, 512],
+                             critic_hiddens=[256, 256],
                              critic_hidden_activation="tanh",
                              gamma=0.99,
-                             tau=0.0013521,
+                             tau=0.00576962,
                              n_step=1,
-                             l2_reg=1e-6,
                              train_batch_size=1024,
-                             policy_delay=3,
                              use_huber=False,
-                             huber_threshold=1.0,
                              replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 19, "storage_unit": "timesteps"},
                              _enable_learner_api=False)
 
-    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0241369, "initial_scale": 1.0, "final_scale": 1.0})
+    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0319537, "initial_scale": 1.0, "final_scale": 1.0})
 
     config = config.resources(num_gpus=0, num_cpus_per_worker=1)
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=8,
+                             num_rollout_workers=7,
                              rollout_fragment_length=1,
                              observation_filter="MeanStdFilter",
-                             preprocessor_pref=None,
-                             create_env_on_local_worker=False)
+                             preprocessor_pref=None)
 
     config = config.framework(framework="torch")
 
@@ -73,12 +69,12 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=1000, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=6000, checkpoint_at_end=True)
 
     run_config = RunConfig(stop=MaximumIterationStopper(max_iter=60000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 
-    res = Tuner("TD3", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
+    res = Tuner("DDPG", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
     ray.shutdown()

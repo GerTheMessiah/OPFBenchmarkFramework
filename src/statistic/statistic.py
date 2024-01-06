@@ -18,13 +18,20 @@ if __name__ == '__main__':
 
     clip_low_range = 200
     clip_upper_range = 599
-    rolling = 30
+    rolling = 5
     reporting_range = 40
 
     plt.figure(figsize=(10, 7.5))
+
+    plt.rcParams.update({'font.size': 13})
+
     plt.xlabel('Training iterations')
-    plt.ylabel('Valid solutions mean')
+    if metric == "episode_reward_mean":
+        plt.ylabel('Episode Reward Mean')
+    else:
+        plt.ylabel('Valid solutions mean')
     plt.grid(True)
+
     colors = ["blue", "red", "cyan", "green", "purple", "orange", "magenta", "yellowgreen", "dodgerblue", "black"]
 
     legend = []
@@ -97,5 +104,5 @@ if __name__ == '__main__':
 
         plt.errorbar(x, y, err, ecolor=colors[j], fmt='', linestyle='')
 
-    plt.legend(legend, loc=4)
+    plt.legend(legend, fontsize="15", loc=4)
     plt.savefig(f"./{algorithm}_{env}_{metric.split('/')[-1]}_{attribute[-1]}.png", bbox_inches='tight', format='png')  # plt.show()

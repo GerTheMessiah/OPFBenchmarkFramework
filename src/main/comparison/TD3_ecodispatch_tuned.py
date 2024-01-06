@@ -3,7 +3,7 @@ import os
 
 from ray import tune
 from ray.air import RunConfig, CheckpointConfig
-from ray.rllib.algorithms.ddpg import DDPGConfig
+from ray.rllib.algorithms.td3 import TD3Config
 
 from ray.tune.stopper import MaximumIterationStopper
 
@@ -21,34 +21,36 @@ if __name__ == '__main__':
     env_name = "EcoDispatchEnv-v0"
     register_env(env_name, lambda c: EcoDispatchEnv(**c))
 
-    config = DDPGConfig()
-    config = config.training(twin_q=False,
+    config = TD3Config()
+    config = config.training(twin_q=True,
                              smooth_target_policy=False,
-                             critic_lr=0.00086942,
-                             actor_lr=0.000116484,
-                             actor_hiddens=[256, 256, 256],
+                             actor_lr=6.740772e-5,
+                             critic_lr=0.000834612,
+                             actor_hiddens=[512, 512, 512],
                              actor_hidden_activation="tanh",
                              critic_hiddens=[512, 512, 512],
                              critic_hidden_activation="tanh",
                              gamma=0.99,
-                             tau=0.0013558,
+                             tau=0.00385487,
                              n_step=1,
                              train_batch_size=1024,
+                             policy_delay=1,
                              use_huber=False,
                              replay_buffer_config={"_enable_replay_buffer_api": True, "type": "MultiAgentReplayBuffer", "capacity": 2 ** 20, "storage_unit": "timesteps"},
                              _enable_learner_api=False)
 
-    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0416539, "initial_scale": 1.0, "final_scale": 1.0})
+    config = config.exploration(explore=True, exploration_config={"type": "GaussianNoise", "stddev": 0.0021306, "initial_scale": 1.0, "final_scale": 1.0})
 
-    config = config.resources(num_gpus=0, num_cpus_per_worker=1)
+    config = config.resources(num_gpus=0, num_cpus_per_worker=1, num_cpus_per_learner_worker=1, num_learner_workers=2)
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=8,
+                             num_rollout_workers=7,
                              rollout_fragment_length=1,
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
-                             create_env_on_local_worker=False)
+                             create_env_on_local_worker=False,
+                             enable_connectors=False)
 
     config = config.framework(framework="torch")
 
@@ -70,12 +72,12 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=10000, checkpoint_at_end=True)
 
-    run_config = RunConfig(verbose=1, stop=MaximumIterationStopper(max_iter=100000), checkpoint_config=checkpoint_config)
+    run_config = RunConfig(stop=MaximumIterationStopper(max_iter=100000), checkpoint_config=checkpoint_config)
 
     tune_config = TuneConfig(num_samples=1, reuse_actors=False)
 
-    res = Tuner("DDPG", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
+    res = Tuner("TD3", param_space=config.to_dict(), tune_config=tune_config, run_config=run_config).fit()
 
     ray.shutdown()

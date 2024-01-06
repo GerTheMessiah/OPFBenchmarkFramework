@@ -28,7 +28,7 @@ if __name__ == '__main__':
                              use_gae=False,
                              use_kl_loss=False,
                              lr=0.0001,
-                             train_batch_size=2 ** 13,
+                             train_batch_size=2 ** 12,
                              sgd_minibatch_size=1024,
                              num_sgd_iter=5,
                              clip_param=0.2,

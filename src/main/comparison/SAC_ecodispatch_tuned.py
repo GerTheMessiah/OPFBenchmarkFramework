@@ -24,11 +24,11 @@ if __name__ == '__main__':
 
     config = SACConfig()
     config = config.training(twin_q=True,
-                             q_model_config={"fcnet_hiddens": [256, 256, 256], "fcnet_activation": "tanh"},
-                             policy_model_config={"fcnet_hiddens": [256, 512, 256], "fcnet_activation": "tanh"},
-                             optimization_config={"actor_learning_rate": 1.7156142e-4, "critic_learning_rate": 0.001083363, "entropy_learning_rate": 0.00091893884},
-                             tau=0.01159363,
-                             initial_alpha=0.91867475,
+                             q_model_config={"fcnet_hiddens": [512, 512, 512], "fcnet_activation": "tanh"},
+                             policy_model_config={"fcnet_hiddens": [256, 512, 512], "fcnet_activation": "tanh"},
+                             optimization_config={"actor_learning_rate": 0.0006326, "critic_learning_rate": 0.0003623, "entropy_learning_rate": 0.0003922},
+                             tau=0.730949,
+                             initial_alpha=0.893302,
                              train_batch_size=1024,
                              n_step=1,
                              store_buffer_in_checkpoints=False,
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     config = config.rollouts(batch_mode="complete_episodes",
                              num_envs_per_worker=1,
-                             num_rollout_workers=8,
+                             num_rollout_workers=7,
                              rollout_fragment_length=1,
                              observation_filter="MeanStdFilter",
                              preprocessor_pref=None,
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     config = config.callbacks(OPFMetrics)
 
-    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=0, checkpoint_at_end=True)
+    checkpoint_config = CheckpointConfig(num_to_keep=1, checkpoint_frequency=10000, checkpoint_at_end=True)
 
     run_config = RunConfig(stop=MaximumIterationStopper(max_iter=100000), checkpoint_config=checkpoint_config)
 

@@ -8,7 +8,6 @@ import pandas
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-
     env = sys.argv[1]  # qmarket | ecodispatch
 
     policy = sys.argv[2]
@@ -25,14 +24,14 @@ if __name__ == '__main__':
     if env == "qmarket":
         plt.ylim(-0.11, -0.02)
     else:
-        plt.ylim(-1.4, -0.4)
+        plt.ylim(-1.4, -0.3)
 
     ax = fig.gca()
 
     if env == 'qmarket':
         ax.set_yticks(numpy.arange(-0.11, -0.02, 0.01))
     else:
-        ax.set_yticks(numpy.arange(-1.4, -0.4, 0.1))
+        ax.set_yticks(numpy.arange(-1.4, -0.3, 0.1))
 
     colors_tuned = ["#8D1B1B", "#692792", "#02BCD3", "#F47F17", "#80B344"]
     colors_baseline = ["#D29393", "#A481B9", "#005B67", "#F8CBA3", "#4B6928"]
@@ -54,15 +53,16 @@ if __name__ == '__main__':
             test_path_dict[algo[i]] = [algorithm_path + "/" + d + "/result.json" for d in os.listdir(algorithm_path) if os.path.isdir(os.path.join(algorithm_path, d))]
 
         for j, (algorithm, paths) in enumerate(test_path_dict.items()):
-            if str(algorithm) in ["DDPG", "TD3", "SAC"] if policy == "on" else ["A2C", "PPO"]:
-                continue
             mean_list_erm = []
             for p in paths:
                 with open(p, 'r') as file:
-                    data = json.loads(file.readlines()[-1].strip())
-                    erm = data["evaluation"]["sampler_results"]["episode_reward_mean"]
-                    mean_list_erm.append(erm)
-            print(f"{algorithm}_{env}_episode_reward_mean_mean:  ", mean(mean_list_erm), f"{algorithm}_{env}_episode_reward_mean_std:  ", stdev(mean_list_erm))
+                    for line in reversed(file.readlines()):
+                        data = dict(json.loads(line.strip()))
+                        if "evaluation" in data:
+                            erm = data["evaluation"]["sampler_results"]["episode_reward_mean"]
+                            mean_list_erm.append(erm)
+                            break
+            print(f"{algorithm}_{env}_ERM: {round(mean(mean_list_erm), 4)}\pm{round(stdev(mean_list_erm), 4)}")
             print("------------------------------------------------------------")
             print()
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                 # plt.plot(df["num_agent_steps_sampled"], df[metric].rolling(window=500 if algorithm in ["DDPG", "TD3", "SAC"] else 5).mean(), linestyle='-', color=colors[j])
                 plt.plot(df["index"], df["episode_reward_mean"].rolling(window=500 if algorithm in ["DDPG", "TD3", "SAC"] else 5).mean(), linestyle='-',
                          color=colors_tuned[j] if not bt else colors_baseline[j])
-                if "baseline" not in top_dir:
+                if bt == 0:
                     legend.append(f"Tuned_{algorithm}")
                 else:
                     legend.append(f"Baseline_{algorithm}")
